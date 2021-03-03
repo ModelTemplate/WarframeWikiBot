@@ -53,10 +53,20 @@ def get_page_contents(site):
         data = req.submit()
         wikitext = data['parse']['wikitext']['*']
         # TODO: use namespace id instead for wikis in other languages
-        if page.namespace() == 'Module:':
-            with open('warframe/' + re.sub('[:\/]', '-', page.title()) + '.lua', 'w', encoding='utf-8') as file:
-                file.write(wikitext)
-                file.close()
+        # TODO: support for content in Main, MediaWiki, and Template namespace
+        filepath = ''
+        if page.namespace() == 'Main:':
+            filepath = 'warframe/main' + re.sub('[:\/]', '-', page.title()) + '.txt'
+        elif page.namespace() == 'Module:':
+            filepath = 'warframe/modules' + re.sub('[:\/]', '-', page.title()) + '.lua'
+        elif page.namespace() == 'MediaWiki:':
+            filepath = 'warframe/js' + re.sub('[:\/]', '-', page.title()) + '.js'
+        elif page.namespace() == 'Template:':
+            filepath = 'warframe/templates' + re.sub('[:\/]', '-', page.title()) + '.txt'
+            
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.write(wikitext)
+            file.close()
 
         pagelist.append(wikitext)
 
