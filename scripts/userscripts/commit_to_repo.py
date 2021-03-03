@@ -15,6 +15,9 @@ from datetime import datetime, timedelta
 def get_watched_pages(site):
     """
     Returns a dictionary of pageids and article titles
+
+    @param site: 
+    @type site: pywikibot.site
     """
     # latest changes since the past week
     time = (datetime.utcnow()- timedelta(days=7)).isoformat()
@@ -26,6 +29,12 @@ def get_watched_pages(site):
 
 
 def get_page_contents(site):
+    """
+    Returns the wikitext of pages in the bot's watchlist
+
+    @param site:
+    @type site: pywikibot.site
+    """
     latest_modified_pages = get_watched_pages(site)
     pageids = ''
     for pageid in latest_modified_pages:
@@ -42,9 +51,18 @@ def get_page_contents(site):
 
     return # site.get_parsed_page(page)
 
-def auth_github_api():
-    apiUrl = 'https://api.github.com/repos/ModelTemplate/warframe-wiki-modules/pulls'
-    # if deploying this bot to the cloud, may have to change how secrets are accessed
+
+def auth_github_api(pages, apiurl):
+    """
+    Interfaces with GitHub REST API to upload contents of wiki articles to
+    a repository.
+
+    @param pages: contains Page objects of articles to be uploaded
+    @param apiurl: API endpoint
+    @type pages: list
+    @param apiurl: str
+    """
+    # TODO: if deploying this bot to the cloud, may have to change how secrets are accessed
     pat = open('github-pat.txt', 'r').read()
     headers = {
         'accept': 'application/vnd.github.v3+json',
@@ -66,7 +84,7 @@ def auth_github_api():
     application/vnd.github.VERSION.patch
     """
     payload = ''    # files go here
-    response = requests.post(apiUrl, headers=headers, params=params)
+    response = requests.post(apiurl, headers=headers, params=params)
     print(response.text)
 
 
@@ -110,8 +128,9 @@ def main(*args):
 
     generator = gen_factory.getCombinedGenerator()
 
+    apiurl = 'https://api.github.com/repos/ModelTemplate/warframe-wiki-modules/pulls'
     get_page_contents(site)
-    auth_github_api()
+    auth_github_api(site, apiurl)
 
 
 if __name__ == '__main__':
