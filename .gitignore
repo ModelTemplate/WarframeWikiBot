@@ -20,7 +20,6 @@ pywikibot.egg-info/
 build
 dist
 docs/_build/
-/scripts/userscripts/*
 !/scripts/userscripts/__init__.py
 .vscode/
 github-pat.txt
