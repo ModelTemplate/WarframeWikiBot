@@ -7,6 +7,7 @@ In addition, add a .txt file named github-pat.txt that contains the personal acc
 to the GitHub account that owns the repos you want to commit changes to.
 """
 import pywikibot
+from pywikibot import pagegenerators
 import urllib
 import requests
 from datetime import datetime, timedelta
@@ -77,10 +78,38 @@ def main(*args):
     """
     Process command line arguments and invoke bot.
 
+    If args is an empty list, sys.argv is used.
+
     @param args: command line arguments
     @type args: str
     """
+    options = {}
+
+    local_args = pywikibot.handle_args(args)
+    gen_factory = pagegenerators.GeneratorFactory()
     site = pywikibot.Site()
+
+    # TODO: update args
+    for arg in local_args:
+        if arg.startswith('-enable'):
+            if len(arg) == 7:
+                options['enablePage'] = pywikibot.input(
+                    'Would you like to check if the bot should run or not?')
+            else:
+                options['enablePage'] = arg[8:]
+        elif arg.startswith('-disambig'):
+            if len(arg) == 9:
+                options['disambigPage'] = pywikibot.input(
+                    'In which page should the bot save the disambig pages?')
+            else:
+                options['disambigPage'] = arg[10:]
+        elif arg == '-always':
+            options['always'] = True
+        else:
+            gen_factory.handle_arg(arg)
+
+    generator = gen_factory.getCombinedGenerator()
+
     get_page_contents(site)
     auth_github_api()
 
