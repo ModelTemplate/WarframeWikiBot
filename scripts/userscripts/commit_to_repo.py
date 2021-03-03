@@ -52,25 +52,40 @@ def get_page_contents(site):
         req = site._simple_request(action='parse', prop='wikitext', page=page)
         data = req.submit()
         wikitext = data['parse']['wikitext']['*']
-        # TODO: use namespace id instead for wikis in other languages
-        # TODO: support for content in Main, MediaWiki, and Template namespace
-        filepath = ''
-        if page.namespace() == 'Main:':
-            filepath = 'warframe/main' + re.sub('[:\/]', '-', page.title()) + '.txt'
-        elif page.namespace() == 'Module:':
-            filepath = 'warframe/modules' + re.sub('[:\/]', '-', page.title()) + '.lua'
-        elif page.namespace() == 'MediaWiki:':
-            filepath = 'warframe/js' + re.sub('[:\/]', '-', page.title()) + '.js'
-        elif page.namespace() == 'Template:':
-            filepath = 'warframe/templates' + re.sub('[:\/]', '-', page.title()) + '.txt'
-            
-        with open(filepath, 'w', encoding='utf-8') as file:
-            file.write(wikitext)
-            file.close()
 
+        write_page_to_file(page, wikitext)
         pagelist.append(wikitext)
 
     return pagelist
+
+
+def write_page_to_file(page, wikitext):
+    """
+    Writes page contents to disk.
+
+    @param page: a page object
+    @param wikitext: page contents in wikitext
+    @type page: pywikibot.page
+    @type wikitext: str
+    """
+    # TODO: use namespace id instead for wikis in other languages
+    # TODO: update regex replacement for different namespaces
+    filepath = ''
+    if page.namespace() == 'Main:':
+        filepath = 'warframe/main/' + re.sub('[:\/]', '-', page.title()) + '.txt'
+    elif page.namespace() == 'Module:':
+        filepath = 'warframe/modules/' + re.sub('[:\/]', '-', page.title()) + '.lua'
+    elif page.namespace() == 'MediaWiki:':
+        filepath = 'warframe/js/' + re.sub('[:\/]', '-', page.title()) + '.js'
+    elif page.namespace() == 'Template:':
+        filepath = 'warframe/templates/' + re.sub('[:\/]', '-', page.title()) + '.txt'
+    else:
+        raise Exception('The following namespace is not supported: ' + page.namespace())
+
+    with open(filepath, 'w', encoding='utf-8') as file:
+        file.write(wikitext)
+        file.close()
+
 
 def auth_github_api(pages, apiurl):
     """
