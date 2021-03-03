@@ -10,13 +10,14 @@ import pywikibot
 from pywikibot import pagegenerators
 import urllib
 import requests
+import re
 from datetime import datetime, timedelta
 
 def get_watched_pages(site):
     """
     Returns a dictionary of pageids and article titles
 
-    @param site: 
+    @param site: the wiki that the bot is operating on
     @type site: pywikibot.site
     """
     # latest changes since the past week
@@ -25,6 +26,7 @@ def get_watched_pages(site):
     latest_modified_pages = {}
     for revision in latest_revisions:
         latest_modified_pages.update({revision['pageid']: revision['title']})
+
     return latest_modified_pages
 
 
@@ -32,25 +34,33 @@ def get_page_contents(site):
     """
     Returns the wikitext of pages in the bot's watchlist
 
-    @param site:
+    @param site: the wiki that the bot is operating on
     @type site: pywikibot.site
     """
     latest_modified_pages = get_watched_pages(site)
+
     pageids = ''
     for pageid in latest_modified_pages:
-        pageids += str(pageid) + "|"
+        pageids += str(pageid) + '|'
+
     pageids = pageids.rstrip('|')
     pages = site.load_pages_from_pageids(pageids)
+    pagelist = []
     # not using site.get_parsed_page() since it does not get page content in its
     # original wikitext as of version 6.0.0 of the bot
     for page in pages:
         req = site._simple_request(action='parse', prop='wikitext', page=page)
         data = req.submit()
-        unparsed_text = data['parse']['wikitext']['*']
-        # print(unparsed_text)
+        wikitext = data['parse']['wikitext']['*']
+        # TODO: use namespace id instead for wikis in other languages
+        if page.namespace() == 'Module:':
+            with open('warframe/' + re.sub('[:\/]', '-', page.title()) + '.lua', 'w', encoding='utf-8') as file:
+                file.write(wikitext)
+                file.close()
 
-    return # site.get_parsed_page(page)
+        pagelist.append(wikitext)
 
+    return pagelist
 
 def auth_github_api(pages, apiurl):
     """
