@@ -658,6 +658,10 @@ local function getValue(Warframe, ValName, giveDefault, asString)
         if(Warframe.Subsumed ~= nil) then
             return "[["..Warframe.Subsumed.."]]"
         end
+    elseif(ValName == "SUBSUMEDTT") then --the tooltip of subsumed ability
+        if(Warframe.Subsumed ~= nil) then
+            return Ability._tooltipText(Warframe.Subsumed)
+        end
     end
 end
 

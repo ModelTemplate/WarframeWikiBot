@@ -1013,7 +1013,7 @@ local ModData = {
     },
     ["Carnis Carapace"] = {
         Image = "CarnisCarapaceMod.png",
-        Introduced = 29,
+        Introduced = "29",
         Name = "Carnis Carapace",
         Polarity = "Vazarin",
         Rarity = "Uncommon",
@@ -1021,7 +1021,7 @@ local ModData = {
     },
     ["Carnis Mandible"] = {
         Image = "CarnisMandibleMod.png",
-        Introduced = 29,
+        Introduced = "29",
         Name = "Carnis Mandible",
         Polarity = "Naramon",
         Rarity = "Common",
@@ -1029,7 +1029,7 @@ local ModData = {
     },
     ["Carnis Stinger"] = {
         Image = "CarnisStingerMod.png",
-        Introduced = 29,
+        Introduced = "29",
         Name = "Carnis Stinger",
         Polarity = "Naramon",
         Rarity = "Rare",
@@ -1146,7 +1146,7 @@ local ModData = {
     },
     ["Chromatic Blade"] = {
         Image = "ChromaticBladeMod.png",
-        Introduced = 20.7,
+        Introduced = "20.7",
         Name = "Chromatic Blade",
         Polarity = "Zenurik",
         Rarity = "Rare",
