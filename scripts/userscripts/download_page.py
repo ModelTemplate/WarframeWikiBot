@@ -4,20 +4,18 @@ This bot downloads a specified wiki page to disk.
 
 This script supports the following command line parameters:
 
-    -pagename:#     The name of the page (e.g. Module:Weapons)
+    -pagename:#     The name of the page (e.g. 'Module:Weapons')
 
     -storepath:#    The stored file's path.
 """
 
 import os.path
 
-from os import remove, replace
-
 import pywikibot
+import re
 
 from pywikibot.backports import Tuple
 from pywikibot import Bot
-from pywikibot.comms.http import fetch
 
 
 class DownloadPageBot(Bot):
@@ -25,81 +23,81 @@ class DownloadPageBot(Bot):
     """Download page bot."""
 
     available_options = {
-        'wikiname': '',
-        'filename': '',
+        'site': '',
+        'pagename': '',
         'storepath': './',
     }
 
-    def convert_from_bytes(self, total_bytes):
+    # Unused; may port this to download_dump.py in main repo
+    @staticmethod
+    def convert_from_bytes(total_bytes):
+        """
+        Performs a byte value conversion
+
+        @param total_bytes: total bytes to be converted
+        @type total_bytes: float
+        """
         for unit in ['B', 'K', 'M', 'G', 'T']:
-            if abs(self.total_bytes) < 1024:
+            if abs(total_bytes) < 1024:
                 return str(total_bytes) + unit
-            self.total_bytes = float(format(self.total_bytes / 1024.0, '.2f'))
-        return str(self.total_bytes) + 'P'
+            total_bytes = float(format(total_bytes / 1024.0, '.2f'))
+        return str(total_bytes) + 'P'
+
+
+    def get_page_contents(self, title):
+        """
+        Returns the wikitext of a page.
+
+        @param site: the wiki that the bot is operating on
+        @type site: pywikibot.site
+        """
+        # not using site.get_parsed_page() since it does not get page content in its
+        # original wikitext as of version 6.0.0 of the bot
+        req = self.opt.site._simple_request(action='parse', prop='wikitext', title=title)
+        data = req.submit()
+        return data['parse']['wikitext']['*']
+
+
+    def write_page_to_file(self, page):
+        """
+        Writes page contents to disk.
+
+        @param wikitext: page contents in wikitext
+        @type wikitext: str
+        """
+        # TODO: use namespace id instead for wikis in other languages
+        # TODO: update regex replacement for different namespaces
+        filepath = self.opt.storepath
+        title = self.opt.pagename
+        if page.namespace() == 'Main:':
+            filepath += 'main/' + re.sub('[:\/]', '-', title) + '.txt'
+        elif page.namespace() == 'Module:':
+            filepath += 'modules/' + re.sub('[:\/]', '-', title) + '.lua'
+        elif page.namespace() == 'MediaWiki:':
+            filepath += 'js/' + re.sub('[:\/]', '-', title) + '.js'
+        elif page.namespace() == 'Template:':
+            filepath += 'templates/' + re.sub('[:\/]', '-', title) + '.txt'
+        else:
+            raise Exception('The following namespace is not supported: ' + page.namespace())
+
+        try:
+            with open(filepath, 'w', encoding='utf-8') as file:
+                file.write(self.get_page_contents(page.title()))
+                file.close()
+
+        except (OSError, IOError):
+            pywikibot.exception()
+    
 
     def run(self):
         """Run bot."""
-        pywikibot.output('Downloading file from ' + self.opt.wikiname)
+        print(self.opt)
+        pywikibot.output('Downloading page from ' + self.opt.site.dbName())
 
-        download_filename = '{wikiname}-{pagename}'.format_map(self.opt)
+        wikitext = self.get_page_contents(self.opt.pagename)
+        self.write_page_to_file(wikitext)
 
-        file_storepath = os.path.join(self.opt.storepath, download_filename)
-
-        # First iteration for atomic download with temporary file
-        # Second iteration for fallback non-atomic download
-        for non_atomic in range(2):
-            try:
-                url = 'https://dumps.wikimedia.org/{}/{}/{}'.format()
-                pywikibot.output('Downloading file from ' + url)
-                response = fetch(url, stream=True)
-
-                if response.status_code != 200:
-                    if response.status_code == 404:
-                        pywikibot.output(
-                            'File with name {filename!r}, from dumpdate '
-                            '{dumpdate!r}, and wiki {wikiname!r} ({url}) '
-                            "isn't available in the Wikimedia Dumps"
-                            .format(url=url, **self.opt))
-                    return
-
-                with open(file_storepath, 'wb') as result_file:
-                    total = int(response.headers['content-length'])
-                    if total == -1:
-                        pywikibot.warning("'content-length' missing in "
-                                            'response headers')
-                    downloaded = 0
-                    parts = 50
-                    display_string = ''
-
-                    pywikibot.output('')
-                    for data in response.iter_content(100 * 1024):
-                        result_file.write(data)
-
-                        if total <= 0:
-                            continue
-
-                        downloaded += len(data)
-                        done = int(parts * downloaded / total)
-                        display = map(self.convert_from_bytes,
-                                        (downloaded, total))
-                        prior_display = display_string
-                        display_string = '\r|{}{}|{}{}/{}'.format(
-                            '=' * done,
-                            '-' * (parts - done),
-                            ' ' * 5,
-                            *display)
-                        # Add whitespace to cover up prior bar
-                        display_string += ' ' * (
-                            len(prior_display.rstrip())
-                            - len(display_string.rstrip()))
-
-                        pywikibot.output(display_string, newline=False)
-                    pywikibot.output('')
-
-            except (OSError, IOError):
-                pywikibot.exception()
-
-        pywikibot.output('Done! File stored as ' + file_storepath)
+        pywikibot.output('Done! File stored as ' + self.opt.storepath)
 
 
 def main(*args: Tuple[str, ...]):
@@ -138,9 +136,8 @@ def main(*args: Tuple[str, ...]):
                                   unknown_parameters=unknown_args):
         return
 
-    site = pywikibot.Site()
-    opts['wikiname'] = site.dbName()
-
+    opts['site'] = pywikibot.Site()
+    print(opts)
     bot = DownloadPageBot(**opts)
     bot.run()
 
